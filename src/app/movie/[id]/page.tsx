@@ -194,7 +194,6 @@ function EditableMovieDetails({ movie, userId }: { movie: Movie; userId: string 
               <div className="mb-5 border-b border-[#354052] pb-4">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#B49A70]">Movie Information</p>
                 <h1 className="mt-1 break-words text-xl font-semibold text-[#F4EDE2] sm:text-2xl">{movie.title}</h1>
-                <p className="mt-1 text-xs text-[#8994A5]">Movie Details</p>
               </div>
               <div className="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2 xl:grid-cols-3">
                 <Info label="Release Year">{movie.year}</Info>
@@ -224,9 +223,8 @@ function EditableMovieDetails({ movie, userId }: { movie: Movie; userId: string 
             </section>
 
             <section className={sectionClass}>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#B49A70]">Personal Collection</p>
-              <h2 className="mb-5 mt-1 text-lg font-semibold text-[#F4EDE2]">Collection Settings</h2>
-              <p className={labelClass}>Watching Status</p>
+              <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#B49A70]">Collection</p>
+              <p className={labelClass}>Status</p>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {([
                   { value: "watchlist", label: "Watchlist", hint: "Watch later" },
@@ -246,17 +244,13 @@ function EditableMovieDetails({ movie, userId }: { movie: Movie; userId: string 
                         {option.label}
                         {selected && <Check className="h-4 w-4 text-[#B49A70]" />}
                       </span>
-                      <span className="mt-1 block text-xs text-[#8994A5]">{option.hint}</span>
                     </button>
                   );
                 })}
               </div>
-              <button type="button" disabled={savingSetting} aria-pressed={favorite} onClick={() => void saveSetting("is_favorite", !favorite)} className={`mt-3 flex w-full items-center gap-3 rounded-xl border p-4 text-left transition-colors ${favorite ? "border-[#9D6B79] bg-[#9D6B79]/15" : "border-[#354052] bg-[#242D3C] hover:border-[#526078]"}`}>
-                <Heart className={`h-5 w-5 ${favorite ? "fill-[#D99EAF] text-[#D99EAF]" : "text-[#8994A5]"}`} />
-                <span className="flex-1">
-                  <span className="block text-sm font-semibold">Favorites</span>
-                  <span className="block text-xs text-[#8994A5]">{favorite ? "Added to your favorites" : "Not added to favorites"}</span>
-                </span>
+              <button type="button" disabled={savingSetting} aria-pressed={favorite} onClick={() => void saveSetting("is_favorite", !favorite)} className={`mt-3 flex w-full items-center gap-3 rounded-xl border p-3.5 text-left transition-colors ${favorite ? "border-[#9D6B79] bg-[#9D6B79]/15" : "border-[#354052] bg-[#242D3C] hover:border-[#526078]"}`}>
+                <Heart className={`h-4 w-4 ${favorite ? "fill-[#D99EAF] text-[#D99EAF]" : "text-[#8994A5]"}`} />
+                <span className="flex-1 text-sm font-medium">Favorite</span>
                 {favorite && <Check className="h-4 w-4 text-[#D99EAF]" />}
               </button>
               {message && <p role="alert" className="mt-3 text-sm text-red-400">{message}</p>}
@@ -264,9 +258,8 @@ function EditableMovieDetails({ movie, userId }: { movie: Movie; userId: string 
             </section>
 
             <section className={sectionClass}>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#B49A70]">Your Thoughts</p>
-              <h2 className="mb-4 mt-1 text-lg font-semibold text-[#F4EDE2]">Personal Notes</h2>
-              <label htmlFor="movie-notes" className="sr-only">Personal Notes</label>
+              <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#B49A70]">Notes</p>
+              <label htmlFor="movie-notes" className="sr-only">Notes</label>
               <textarea id="movie-notes" rows={4} value={notes} onChange={(event) => { setNotes(event.target.value); setNotesMessage(""); }} placeholder="What did you think about this movie?" className="w-full rounded-lg border border-[#354052] bg-[#242D3C] px-3 py-2.5 text-sm text-[#E2E5EB] outline-none placeholder:text-[#788597] focus:border-[#B49A70]" />
               <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
                 <span role="status" className={`text-xs ${notesMessage.startsWith("Could") ? "text-red-400" : "text-[#9CA8B9]"}`}>{notesMessage}</span>

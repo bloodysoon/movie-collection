@@ -8,6 +8,7 @@ import { Film, Plus } from "lucide-react";
 
 import { MovieCard } from "@/components/movie-card";
 import { useAuth } from "@/contexts/auth-context";
+import { useAddMovie } from "@/contexts/add-movie-context";
 import { useMovieCollection } from "@/contexts/movie-collection-context";
 import type { Movie } from "@/types/movie";
 
@@ -15,15 +16,14 @@ type SortField =
   | "created_at"
   | "year"
   | "rating"
-  | "title"
-  | "actors"
-  | "genre";
+  | "metascore";
 
 function MovieCollection() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const { user, loading: authLoading } = useAuth();
+  const { openDrawer } = useAddMovie();
 
   const {
     movies,
@@ -94,24 +94,15 @@ function MovieCollection() {
             comparison = (a.year ?? 0) - (b.year ?? 0);
             break;
 
-          case "rating":
-            comparison = (a.rating ?? 0) - (b.rating ?? 0);
+          case "rating": {
+            const ra = a.rating != null ? Number(a.rating) : (a.imdb_rating && a.imdb_rating !== "N/A" ? Number(a.imdb_rating) : 0);
+            const rb = b.rating != null ? Number(b.rating) : (b.imdb_rating && b.imdb_rating !== "N/A" ? Number(b.imdb_rating) : 0);
+            comparison = ra - rb;
             break;
+          }
 
-          case "title":
-            comparison = a.title.localeCompare(b.title);
-            break;
-
-          case "actors":
-            comparison = (a.actors ?? "").localeCompare(
-              b.actors ?? ""
-            );
-            break;
-
-          case "genre":
-            comparison = (a.genre ?? "").localeCompare(
-              b.genre ?? ""
-            );
+          case "metascore":
+            comparison = (Number(a.metascore) || 0) - (Number(b.metascore) || 0);
             break;
 
           default:
@@ -160,13 +151,14 @@ function MovieCollection() {
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border py-20 text-center">
           <Film className="mb-4 h-12 w-12 text-[#B49A70]" />
 
-          <Link
-            href="/add"
+          <button
+            type="button"
+            onClick={openDrawer}
             className="mt-6 inline-flex items-center gap-2 rounded-lg bg-[#74603D] px-5 py-2.5 text-sm font-medium text-[#F4EDE2] hover:bg-[#866F49]"
           >
             <Plus className="h-4 w-4" />
             Add Your First Movie
-          </Link>
+          </button>
         </div>
       ) : filteredMovies.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border py-16 text-center">
@@ -181,7 +173,7 @@ function MovieCollection() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 md:gap-5">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 2xl:grid-cols-8 sm:gap-3">
           {filteredMovies.map((movie: Movie) => (
             <MovieCard
               key={movie.id}

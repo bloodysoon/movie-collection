@@ -85,12 +85,10 @@ export function ShareButton() {
         onClick={() => void handleOpen()}
         aria-label="Share Collection"
         title="Share Collection"
-        className="inline-flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-[#354052] bg-[#1A2230] text-[#A6ADBA] transition-colors hover:border-[#74603D] hover:text-white sm:w-auto sm:px-3"
+        className="inline-flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-[#1E2D3D] bg-[#0C1520] text-[#6B7A8D] transition-all hover:border-[#74603D]/45 hover:bg-[#74603D]/10 hover:text-[#B49A70] sm:w-auto sm:px-3"
       >
         <Share2 className="h-4 w-4 shrink-0" />
-        <span className="hidden text-xs font-medium sm:inline">
-          Share Collection
-        </span>
+        <span className="hidden text-xs font-medium sm:inline">Share</span>
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>

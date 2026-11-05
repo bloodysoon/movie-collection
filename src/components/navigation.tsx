@@ -3,9 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ArrowLeft, LogOut, Plus } from "lucide-react";
+import { ArrowLeft, Film, LogOut, Plus } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 import { useAuth } from "@/contexts/auth-context";
+import { useAddMovie } from "@/contexts/add-movie-context";
 import { ShareButton } from "@/components/share-button";
 import { CollectionToolbar } from "@/components/collection-toolbar";
 
@@ -15,10 +17,14 @@ export function Navigation() {
   const [signingOut, setSigningOut] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
   const { user, loading, signOut } = useAuth();
+  const { open: drawerOpen, openDrawer } = useAddMovie();
+
   const isAuthPage = pathname === "/login" || pathname === "/signup";
   const isCollectionPage = pathname === "/";
-  const isAddPage = pathname === "/add";
-  const showBackButton = isAddPage || pathname.startsWith("/edit/") || pathname.startsWith("/movies/") || pathname.startsWith("/movie/");
+  const showBackButton =
+    pathname.startsWith("/edit/") ||
+    pathname.startsWith("/movies/") ||
+    pathname.startsWith("/movie/");
 
   const handleSignOut = async () => {
     if (signingOut) return;
@@ -34,52 +40,124 @@ export function Navigation() {
 
   if (isAuthPage || (!loading && !user)) return null;
 
+  const searchExpanded = searchFocused && isCollectionPage;
+
   return (
     <>
-      <header className="sticky top-0 z-40 w-full border-b border-[#293241] bg-[#0D1119]/95 backdrop-blur-xl">
-        <nav className="mx-auto flex w-full max-w-[1920px] flex-wrap items-center gap-2 px-3 py-2.5 sm:px-4 2xl:px-6">
-          {user && isCollectionPage && <CollectionToolbar searchFocused={searchFocused} onSearchFocusChange={setSearchFocused} />}
+      <header className="sticky top-0 z-40 w-full">
+        {/* Warm accent line */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#74603D]/50 to-transparent" />
 
-          {user && showBackButton && (
-            <Link href="/" className="inline-flex h-10 w-fit shrink-0 items-center gap-2 rounded-lg px-2 text-sm font-medium text-[#A6ADBA] transition-colors hover:bg-[#1A2230] hover:text-[#F4EDE2]">
-              <ArrowLeft className="h-4 w-4" /> Back to Collection
-            </Link>
-          )}
+        <div className="border-b border-[#131D2A] bg-[#070C13]/97 shadow-[0_2px_24px_rgba(0,0,0,0.45)] backdrop-blur-xl">
+          <nav className="mx-auto flex w-full max-w-[1920px] items-center gap-2 px-3 py-2 sm:px-4 2xl:px-6">
 
-          <div className={`${searchFocused && isCollectionPage ? "hidden sm:flex" : "flex"} ml-auto shrink-0 items-center gap-1.5 sm:gap-2`}>
-            {loading ? (
-              <span className="text-xs text-muted-foreground">Loading...</span>
-            ) : user ? (
-              <>
-                {/* Keep the existing share behavior, only compact its appearance on mobile. */}
-                <div className="[&_button]:!h-10 [&_button]:!w-10 [&_button]:!min-w-0 [&_button]:!gap-0 [&_button]:!px-0 [&_button]:!text-[0px] [&_button_svg]:!h-4 [&_button_svg]:!w-4 sm:[&_button]:!w-auto sm:[&_button]:!gap-2 sm:[&_button]:!px-3 sm:[&_button]:!text-xs">
-                  <ShareButton />
-                </div>
-
-                {!isAddPage && (
-                  <a href="/add" className="hidden h-10 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-[#354052] bg-[#74603D] px-3 text-xs font-medium leading-none text-[#F4EDE2] transition-colors hover:bg-[#866F49] sm:inline-flex">
-                    <Plus className="h-3.5 w-3.5" /> Add Movie
-                  </a>
-                )}
-
-                <button type="button" onClick={() => void handleSignOut()} disabled={signingOut} aria-label="Sign out" title="Sign out" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[#354052] bg-[#1A2230] text-[#A6ADBA] transition-colors hover:border-[#74603D] hover:text-white">
-                  <LogOut className="h-4 w-4" />
-                </button>
-              </>
+            {/* ── Left: brand logo or back button ── */}
+            {showBackButton ? (
+              <Link
+                href="/"
+                className="flex h-9 shrink-0 items-center gap-2 rounded-lg px-2.5 text-sm font-medium text-[#6B7A8D] transition-colors hover:bg-[#111A26] hover:text-[#D8DDE6]"
+              >
+                <ArrowLeft className="h-4 w-4 shrink-0" />
+                <span className="hidden sm:inline">Collection</span>
+              </Link>
             ) : (
-              <>
-                <Link href="/login" className="inline-flex h-10 items-center rounded-lg px-4 text-sm text-muted-foreground transition-colors hover:text-foreground">Login</Link>
-                <Link href="/signup" className="inline-flex h-10 items-center rounded-lg bg-[#74603D] px-4 text-sm font-medium text-[#F4EDE2] hover:bg-[#866F49]">Sign Up</Link>
-              </>
+              <Link
+                href="/"
+                aria-label="Home"
+                className={cn(
+                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-all",
+                  "border border-[#74603D]/30 bg-[#74603D]/10 text-[#B49A70]",
+                  "hover:border-[#74603D]/55 hover:bg-[#74603D]/20 hover:text-[#D4BA8D]",
+                  searchExpanded ? "hidden sm:flex" : "flex"
+                )}
+              >
+                <Film className="h-4 w-4" />
+              </Link>
             )}
-          </div>
-        </nav>
+
+            {/* ── Middle: search + filters ── */}
+            {user && isCollectionPage && (
+              <CollectionToolbar
+                searchFocused={searchFocused}
+                onSearchFocusChange={setSearchFocused}
+              />
+            )}
+
+            {/* ── Right: actions ── */}
+            <div
+              className={cn(
+                "ml-auto flex shrink-0 items-center gap-1.5",
+                searchExpanded && "hidden sm:flex"
+              )}
+            >
+              {!loading && user && (
+                <>
+                  {/* Share */}
+                  <ShareButton />
+
+                  {/* Add Movie — desktop only (FAB covers mobile) */}
+                  {!drawerOpen && (
+                    <button
+                      type="button"
+                      onClick={openDrawer}
+                      className={cn(
+                        "hidden sm:inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-3.5",
+                        "border border-[#9A8157]/35 bg-gradient-to-b from-[#866F49] to-[#634E32]",
+                        "text-xs font-semibold text-[#FFF0DC]",
+                        "transition-all hover:from-[#9A8157] hover:to-[#6E5538]",
+                        "hover:shadow-[0_0_18px_rgba(116,96,61,0.45)] hover:border-[#9A8157]/55"
+                      )}
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      Add Movie
+                    </button>
+                  )}
+
+                  {/* Sign out */}
+                  <button
+                    type="button"
+                    onClick={() => void handleSignOut()}
+                    disabled={signingOut}
+                    aria-label="Sign out"
+                    title="Sign out"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#172030] bg-[#0C1520] text-[#6B7A8D] transition-colors hover:border-[#283A52] hover:text-[#C8D0DC] disabled:opacity-50"
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </button>
+                </>
+              )}
+
+              {!loading && !user && (
+                <>
+                  <Link href="/login" className="inline-flex h-9 items-center rounded-lg px-3 text-sm text-[#8994A5] transition-colors hover:text-foreground">
+                    Login
+                  </Link>
+                  <Link href="/signup" className="inline-flex h-9 items-center rounded-lg bg-[#74603D] px-3 text-sm font-medium text-[#F4EDE2] hover:bg-[#866F49]">
+                    Sign Up
+                  </Link>
+                </>
+              )}
+            </div>
+          </nav>
+        </div>
       </header>
 
-      {user && !isAddPage && (
-        <a href="/add" aria-label="Add Movie" title="Add Movie" className="fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] right-5 z-30 flex h-14 w-14 items-center justify-center rounded-full border border-[#9A8157] bg-[#74603D] text-[#F4EDE2] shadow-xl shadow-black/40 transition-colors hover:bg-[#866F49] sm:hidden">
+      {/* Mobile floating add button */}
+      {user && !drawerOpen && (
+        <button
+          type="button"
+          onClick={openDrawer}
+          aria-label="Add Movie"
+          className={cn(
+            "fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] right-4 z-30 sm:hidden",
+            "flex h-14 w-14 items-center justify-center rounded-full",
+            "border border-[#9A8157]/40 bg-gradient-to-b from-[#866F49] to-[#5C4826]",
+            "text-[#FFF0DC] shadow-[0_4px_24px_rgba(90,70,38,0.7)] transition-all",
+            "hover:from-[#9A8157] hover:to-[#6E5538] hover:shadow-[0_6px_32px_rgba(116,96,61,0.75)]"
+          )}
+        >
           <Plus className="h-6 w-6" />
-        </a>
+        </button>
       )}
     </>
   );

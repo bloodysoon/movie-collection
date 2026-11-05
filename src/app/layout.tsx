@@ -8,6 +8,8 @@ import "./globals.css";
 import { Navigation } from "@/components/navigation";
 import { AuthProvider } from "@/contexts/auth-context";
 import { MovieCollectionProvider } from "@/contexts/movie-collection-context";
+import { AddMovieProvider } from "@/contexts/add-movie-context";
+import { AddMovieDrawer } from "@/components/add-movie-drawer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,19 +39,22 @@ export default function RootLayout({
       <body className="min-h-screen bg-background text-foreground">
         <AuthProvider>
           <MovieCollectionProvider>
-            <div className="flex min-h-screen flex-col">
-              <Suspense
-                fallback={
-                  <div className="h-16 border-b border-border/60" />
-                }
-              >
-                <Navigation />
-              </Suspense>
+            <AddMovieProvider>
+              <div className="flex min-h-screen flex-col">
+                <Suspense
+                  fallback={
+                    <div className="h-16 border-b border-border/60" />
+                  }
+                >
+                  <Navigation />
+                </Suspense>
 
-              <main className="min-w-0 flex-1">
-                {children}
-              </main>
-            </div>
+                <main className="min-w-0 flex-1">
+                  {children}
+                </main>
+              </div>
+              <AddMovieDrawer />
+            </AddMovieProvider>
           </MovieCollectionProvider>
         </AuthProvider>
       </body>
