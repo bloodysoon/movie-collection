@@ -1,247 +1,211 @@
-'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
-import { MovieCard } from '@/components/movie-card'
-import { Button } from '@/components/ui/button'
-import { Movie } from '@/types/movie'
-import { useAuth } from '@/contexts/auth-context'
+"use client";
 
-type SortField = 'created_at' | 'year' | 'rating' | 'title' | 'actors' | 'genre'
-type SortOrder = 'asc' | 'desc'
+import { Suspense, useEffect, useMemo } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Film, Plus } from "lucide-react";
 
-export default function Home() {
-  const router = useRouter()
-  const { user, loading: authLoading } = useAuth()
-  const [movies, setMovies] = useState<Movie[]>([])
-  const [loading, setLoading] = useState(true)
-  const [sortField, setSortField] = useState<SortField>('created_at')
-  const [sortOrder, setSortOrder] = useState<SortOrder>('desc')
-  const [filterYear, setFilterYear] = useState<string>('')
-  const [filterGenre, setFilterGenre] = useState<string>('')
-  const [filterStatus, setFilterStatus] = useState<string>('')
+import { MovieCard } from "@/components/movie-card";
+import { useAuth } from "@/contexts/auth-context";
+import { useMovieCollection } from "@/contexts/movie-collection-context";
+import type { Movie } from "@/types/movie";
+
+type SortField =
+  | "created_at"
+  | "year"
+  | "rating"
+  | "title"
+  | "actors"
+  | "genre";
+
+function MovieCollection() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const { user, loading: authLoading } = useAuth();
+
+  const {
+    movies,
+    loading,
+    error,
+    removeMovie,
+    updateMovie,
+    refreshMovies,
+  } = useMovieCollection();
+
+  const search = searchParams.get("search") ?? "";
+  const status = searchParams.get("status") ?? "";
+  const genre = searchParams.get("genre") ?? "";
+  const year = searchParams.get("year") ?? "";
+  const sort = (searchParams.get("sort") ??
+    "created_at") as SortField;
+  const order = searchParams.get("order") ?? "desc";
 
   useEffect(() => {
     if (!authLoading && !user) {
-      router.push('/login')
+      router.replace("/login");
     }
-  }, [user, authLoading, router])
+  }, [user, authLoading, router]);
 
-  useEffect(() => {
-    async function loadMovies() {
-      if (!user) return
+  const filteredMovies = useMemo(() => {
+    const query = search.trim().toLowerCase();
 
-      const { data: movies, error } = await supabase
-        .from('movies')
-        .select('*')
-        .eq('user_id', user.id)
+    return movies
+      .filter((movie) => {
+        const matchesSearch =
+          !query ||
+          movie.title.toLowerCase().includes(query) ||
+          (movie.actors ?? "")
+            .toLowerCase()
+            .includes(query) ||
+          (movie.genre ?? "")
+            .toLowerCase()
+            .includes(query);
 
-      if (error) {
-        console.error('Error fetching movies:', error)
-        setMovies([])
-      } else {
-        setMovies(movies)
-      }
-      setLoading(false)
-    }
+        const matchesStatus =
+          !status ||
+          (status === "favorites"
+            ? movie.is_favorite === true
+            : movie.status === status);
 
-    if (user) {
-      loadMovies()
-    }
-  }, [user])
+        const matchesGenre =
+          !genre ||
+          (movie.genre ?? "")
+            .split(",")
+            .map((item) => item.trim().toLowerCase())
+            .includes(genre.toLowerCase());
 
-  const sortedMovies = [...movies].sort((a, b) => {
-    let comparison = 0
+        const matchesYear =
+          !year || movie.year?.toString() === year;
 
-    switch (sortField) {
-      case 'year':
-        comparison = (a.year || 0) - (b.year || 0)
-        break
-      case 'rating':
-        comparison = (a.rating || 0) - (b.rating || 0)
-        break
-      case 'title':
-        comparison = a.title.localeCompare(b.title)
-        break
-      case 'actors':
-        comparison = (a.actors || '').localeCompare(b.actors || '')
-        break
-      case 'genre':
-        comparison = (a.genre || '').localeCompare(b.genre || '')
-        break
-      case 'created_at':
-      default:
-        comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-        break
-    }
+        return (
+          matchesSearch &&
+          matchesStatus &&
+          matchesGenre &&
+          matchesYear
+        );
+      })
+      .sort((a, b) => {
+        let comparison = 0;
 
-    return sortOrder === 'asc' ? comparison : -comparison
-  })
+        switch (sort) {
+          case "year":
+            comparison = (a.year ?? 0) - (b.year ?? 0);
+            break;
 
-  const filteredMovies = sortedMovies.filter(movie => {
-    const yearMatch = filterYear === '' || movie.year?.toString() === filterYear
-    const movieGenres = movie.genre?.split(',').map(g => g.trim()) || []
-    const genreMatch = filterGenre === '' || movieGenres.includes(filterGenre)
-    const statusMatch = filterStatus === '' || movie.status === filterStatus
-    return yearMatch && genreMatch && statusMatch
-  })
+          case "rating":
+            comparison = (a.rating ?? 0) - (b.rating ?? 0);
+            break;
 
-  // Get unique years and genres for filter options
-  const uniqueYears = [...new Set(movies.map(m => m.year).filter(Boolean))].sort((a, b) => (b || 0) - (a || 0))
-  const uniqueGenres = [...new Set(
-    movies
-      .map(m => m.genre)
-      .filter(Boolean)
-      .flatMap(genre => genre.split(',').map(g => g.trim()))
-  )].sort()
+          case "title":
+            comparison = a.title.localeCompare(b.title);
+            break;
 
-  const toggleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
-    } else {
-      setSortField(field)
-      setSortOrder('asc')
-    }
-  }
+          case "actors":
+            comparison = (a.actors ?? "").localeCompare(
+              b.actors ?? ""
+            );
+            break;
+
+          case "genre":
+            comparison = (a.genre ?? "").localeCompare(
+              b.genre ?? ""
+            );
+            break;
+
+          default:
+            comparison =
+              new Date(a.created_at).getTime() -
+              new Date(b.created_at).getTime();
+        }
+
+        return order === "asc"
+          ? comparison
+          : -comparison;
+      });
+  }, [movies, search, status, genre, year, sort, order]);
 
   if (authLoading || loading) {
-    return <div className="container mx-auto px-4 py-8">Loading...</div>
+    return (
+      <div className="px-4 py-8 text-sm text-muted-foreground">
+        Loading your collection...
+      </div>
+    );
   }
 
-  if (!user) {
-    return null // Will redirect to login
+  if (!user) return null;
+
+  if (error) {
+    return (
+      <section className="mx-auto w-full max-w-[1800px] px-4 py-10 text-center md:px-6">
+        <p className="text-sm text-red-400">
+          {error}
+        </p>
+
+        <button
+          type="button"
+          onClick={() => void refreshMovies()}
+          className="mt-4 rounded-lg bg-[#74603D] px-4 py-2 text-sm font-medium text-[#F4EDE2] hover:bg-[#866F49]"
+        >
+          Try Again
+        </button>
+      </section>
+    );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold mb-2">My Movies</h1>
-        <p className="text-muted-foreground">
-          Track your favorite movies and what you've watched
-        </p>
-      </div>
-
+    <section className="mx-auto w-full max-w-[1800px] px-4 py-5 md:px-6">
       {movies.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground mb-4">No movies yet</p>
-          <a
+        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border py-20 text-center">
+          <Film className="mb-4 h-12 w-12 text-[#B49A70]" />
+
+          <Link
             href="/add"
-            className="inline-block px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+            className="mt-6 inline-flex items-center gap-2 rounded-lg bg-[#74603D] px-5 py-2.5 text-sm font-medium text-[#F4EDE2] hover:bg-[#866F49]"
           >
-            Add your first movie
-          </a>
+            <Plus className="h-4 w-4" />
+            Add Your First Movie
+          </Link>
+        </div>
+      ) : filteredMovies.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border py-16 text-center">
+          <Film className="mb-4 h-10 w-10 text-muted-foreground" />
+
+          <h2 className="text-lg font-semibold">
+            No movies found
+          </h2>
+
+          <p className="mt-2 text-sm text-muted-foreground">
+            Try adjusting your search or filters.
+          </p>
         </div>
       ) : (
-        <>
-          <div className="mb-6 space-y-4">
-            <div className="flex flex-wrap gap-2 items-center">
-              <span className="text-sm font-medium py-2">Filter by:</span>
-              <select
-                value={filterYear}
-                onChange={(e) => setFilterYear(e.target.value)}
-                className="px-3 py-2 border rounded-md text-sm bg-background"
-              >
-                <option value="">All Years</option>
-                {uniqueYears.map(year => (
-                  <option key={year} value={year}>{year}</option>
-                ))}
-              </select>
-              <select
-                value={filterGenre}
-                onChange={(e) => setFilterGenre(e.target.value)}
-                className="px-3 py-2 border rounded-md text-sm bg-background"
-              >
-                <option value="">All Genres</option>
-                {uniqueGenres.map(genre => (
-                  <option key={genre} value={genre}>{genre}</option>
-                ))}
-              </select>
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="px-3 py-2 border rounded-md text-sm bg-background"
-              >
-                <option value="">All Status</option>
-                <option value="watchlist">Watchlist</option>
-                <option value="watched">Watched</option>
-                <option value="favorites">Favorites</option>
-              </select>
-              {(filterYear || filterGenre || filterStatus) && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setFilterYear('')
-                    setFilterGenre('')
-                    setFilterStatus('')
-                  }}
-                >
-                  Clear Filters
-                </Button>
-              )}
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              <span className="text-sm font-medium py-2">Sort by:</span>
-              <Button
-                variant={sortField === 'created_at' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => toggleSort('created_at')}
-              >
-                Date Added {sortField === 'created_at' && (sortOrder === 'asc' ? '↑' : '↓')}
-              </Button>
-              <Button
-                variant={sortField === 'title' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => toggleSort('title')}
-              >
-                Title {sortField === 'title' && (sortOrder === 'asc' ? '↑' : '↓')}
-              </Button>
-              <Button
-                variant={sortField === 'year' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => toggleSort('year')}
-              >
-                Year {sortField === 'year' && (sortOrder === 'asc' ? '↑' : '↓')}
-              </Button>
-              <Button
-                variant={sortField === 'rating' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => toggleSort('rating')}
-              >
-                Rating {sortField === 'rating' && (sortOrder === 'asc' ? '↑' : '↓')}
-              </Button>
-              <Button
-                variant={sortField === 'genre' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => toggleSort('genre')}
-              >
-                Genre {sortField === 'genre' && (sortOrder === 'asc' ? '↑' : '↓')}
-              </Button>
-              <Button
-                variant={sortField === 'actors' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => toggleSort('actors')}
-              >
-                Actors {sortField === 'actors' && (sortOrder === 'asc' ? '↑' : '↓')}
-              </Button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredMovies.map((movie) => (
-              <MovieCard key={movie.id} movie={movie} />
-            ))}
-          </div>
-
-          {filteredMovies.length === 0 && movies.length > 0 && (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">No movies match your filters</p>
-            </div>
-          )}
-        </>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 md:gap-5">
+          {filteredMovies.map((movie: Movie) => (
+            <MovieCard
+              key={movie.id}
+              movie={movie}
+              onDelete={removeMovie}
+              onUpdate={updateMovie}
+            />
+          ))}
+        </div>
       )}
-    </div>
-  )
+    </section>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense
+      fallback={
+        <div className="px-4 py-8 text-sm text-muted-foreground">
+          Loading collection...
+        </div>
+      }
+    >
+      <MovieCollection />
+    </Suspense>
+  );
 }
