@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { Loader2, LockKeyhole, Mail } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
@@ -71,29 +72,22 @@ export default function LoginPage() {
 
   return (
     <main className="relative isolate flex min-h-dvh items-center justify-center overflow-hidden px-5 py-12 sm:px-10 lg:justify-start lg:px-[10%]">
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 -z-20 bg-cover bg-center bg-no-repeat lg:bg-[position:center_48%]"
-        style={{ backgroundImage: 'url("/images/hogwarts-login.jpg")' }}
-      />
+      <div aria-hidden="true" className="absolute inset-0 -z-20 bg-[#17130F]">
+        <Image
+          src="/images/hogwarts-login.jpg"
+          alt=""
+          fill
+          preload
+          sizes="100vw"
+          className="object-cover object-center lg:object-[center_48%]"
+        />
+      </div>
       <div
         aria-hidden="true"
         className="absolute inset-0 -z-10 bg-gradient-to-t from-[#0B0908]/65 via-[#0B0908]/15 to-[#0B0908]/10 lg:bg-gradient-to-r lg:from-[#0B0908]/65 lg:via-[#0B0908]/20 lg:to-transparent"
       />
 
       <div className="w-full max-w-[360px] lg:translate-y-10">
-        <div className="mb-7 text-center lg:text-left">
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.26em] text-[#E6BB7B] drop-shadow-md">
-            Your Private Cinema
-          </p>
-          <h1 className="text-3xl font-semibold tracking-tight text-[#FFF4E7] drop-shadow-lg sm:text-4xl">
-            {mode === "login" ? "Welcome Back" : "Join the Collection"}
-          </h1>
-          <p className="mt-2 text-sm text-[#F1DFCA] drop-shadow-md">
-            Every great story deserves a place.
-          </p>
-        </div>
-
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
             <p role="alert" className="rounded-lg border border-red-300/30 bg-black/55 px-3 py-2 text-sm text-red-200 backdrop-blur-sm">
@@ -107,7 +101,6 @@ export default function LoginPage() {
           )}
 
           <div>
-            <label htmlFor="email" className="mb-1.5 block text-xs font-medium text-[#FFF0DC] drop-shadow-md">Email</label>
             <div className="relative">
               <Mail aria-hidden="true" className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#E6BB7B]" />
               <input id="email" type="email" autoComplete="email" required value={email}
@@ -116,7 +109,6 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label htmlFor="password" className="mb-1.5 block text-xs font-medium text-[#FFF0DC] drop-shadow-md">Password</label>
             <div className="relative">
               <LockKeyhole aria-hidden="true" className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#E6BB7B]" />
               <input id="password" type="password" autoComplete={mode === "login" ? "current-password" : "new-password"}
@@ -127,7 +119,6 @@ export default function LoginPage() {
 
           {mode === "signup" && (
             <div>
-              <label htmlFor="confirm-password" className="mb-1.5 block text-xs font-medium text-[#FFF0DC] drop-shadow-md">Confirm Password</label>
               <div className="relative">
                 <LockKeyhole aria-hidden="true" className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#E6BB7B]" />
                 <input id="confirm-password" type="password" autoComplete="new-password" required minLength={6}
