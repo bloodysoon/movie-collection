@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Check, Film, Heart, Loader2, Star, Trash2 } from "lucide-react";
@@ -49,6 +49,20 @@ function Poster({ src, title }: { src?: string | null; title: string }) {
 }
 
 export default function MoviePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-[60vh] items-center justify-center">
+          <Loader2 className="h-7 w-7 animate-spin text-[#B49A70]" />
+        </div>
+      }
+    >
+      <MoviePageContent />
+    </Suspense>
+  );
+}
+
+function MoviePageContent() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
@@ -9,11 +9,21 @@ import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { MovieFormData } from '@/types/movie'
 import { useAuth } from '@/contexts/auth-context'
+import { useMovieCollection } from '@/contexts/movie-collection-context'
 
 export default function EditMoviePage() {
+  return (
+    <Suspense fallback={<div className="container mx-auto px-4 py-8">Loading...</div>}>
+      <EditMovieContent />
+    </Suspense>
+  )
+}
+
+function EditMovieContent() {
   const router = useRouter()
   const params = useParams()
   const { user, loading: authLoading } = useAuth()
+  const { refreshMovies } = useMovieCollection()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [formData, setFormData] = useState<MovieFormData>({
@@ -42,14 +52,6 @@ export default function EditMoviePage() {
     }
   }, [user, authLoading, router])
 
-  if (authLoading) {
-    return <div className="container mx-auto px-4 py-8">Loading...</div>
-  }
-
-  if (!user) {
-    return null
-  }
-
   useEffect(() => {
     async function loadMovie() {
       if (!user) return
@@ -71,7 +73,7 @@ export default function EditMoviePage() {
         title: movie.title,
         year: movie.year || undefined,
         genre: movie.genre || undefined,
-        rating: movie.rating || undefined,
+        rating: movie.rating ?? undefined,
         status: movie.status || 'watchlist',
         notes: movie.notes || undefined,
         actors: movie.actors || undefined,
@@ -96,6 +98,7 @@ export default function EditMoviePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!user || saving) return
     setSaving(true)
 
     try {
@@ -105,7 +108,7 @@ export default function EditMoviePage() {
           title: formData.title,
           year: formData.year || null,
           genre: formData.genre || null,
-          rating: formData.rating || null,
+          rating: formData.rating ?? null,
           status: formData.status,
           notes: formData.notes || null,
           actors: formData.actors || null,
@@ -125,6 +128,7 @@ export default function EditMoviePage() {
 
       if (error) throw error
 
+      await refreshMovies()
       router.push(`/movie/${params.id}`)
     } catch (error) {
       console.error('Error updating movie:', error)
@@ -134,9 +138,11 @@ export default function EditMoviePage() {
     }
   }
 
-  if (loading) {
+  if (authLoading || (user && loading)) {
     return <div className="container mx-auto px-4 py-8">Loading...</div>
   }
+
+  if (!user) return null
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -169,7 +175,7 @@ export default function EditMoviePage() {
                 <Input
                   id="year"
                   type="number"
-                  value={formData.year || ''}
+                  value={formData.year ?? ''}
                   onChange={(e) => setFormData({ ...formData, year: e.target.value ? parseInt(e.target.value) : undefined })}
                   placeholder="2024"
                 />
@@ -221,7 +227,7 @@ export default function EditMoviePage() {
                   min="0"
                   max="10"
                   step="0.1"
-                  value={formData.rating || ''}
+                  value={formData.rating ?? ''}
                   onChange={(e) => setFormData({ ...formData, rating: e.target.value ? parseFloat(e.target.value) : undefined })}
                   placeholder="8.5"
                 />
