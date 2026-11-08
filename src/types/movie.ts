@@ -9,6 +9,7 @@ export interface Movie {
   rating?: number;
   status: MovieStatus;
   is_favorite: boolean;
+  liked?: boolean | null;
   notes?: string;
   created_at: string;
   updated_at: string;

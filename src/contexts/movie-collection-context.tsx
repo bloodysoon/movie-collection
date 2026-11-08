@@ -6,6 +6,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -39,9 +40,12 @@ export function MovieCollectionProvider({
   const [movies, setMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const hasLoaded = useRef(false);
 
   const loadMovies = useCallback(async (userId: string) => {
-    setLoading(true);
+    // Only show the loading spinner on the very first fetch — subsequent
+    // refreshes (tab refocus, manual refresh) run silently in the background.
+    if (!hasLoaded.current) setLoading(true);
     setError(null);
 
     const { data, error: fetchError } = await supabase
@@ -56,21 +60,25 @@ export function MovieCollectionProvider({
       setMovies(data ?? []);
     }
 
+    hasLoaded.current = true;
     setLoading(false);
   }, []);
+
+  const userId = user?.id;
 
   useEffect(() => {
     if (authLoading) return;
 
-    if (!user) {
+    if (!userId) {
+      hasLoaded.current = false;
       setMovies([]);
       setError(null);
       setLoading(false);
       return;
     }
 
-    void loadMovies(user.id);
-  }, [user, authLoading, loadMovies]);
+    void loadMovies(userId);
+  }, [userId, authLoading, loadMovies]);
 
   const refreshMovies = useCallback(async () => {
     if (!user) return;

@@ -3,10 +3,11 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { Check, Film, Heart, Loader2, Star, Trash2 } from "lucide-react";
+import { Check, Film, Heart, Loader2, Star, ThumbsDown, ThumbsUp, Trash2 } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { useMovieCollection } from "@/contexts/movie-collection-context";
 import { supabase } from "@/lib/supabase";
+import { RecommendButton } from "@/components/recommend-button";
 import type { Movie, MovieStatus } from "@/types/movie";
 
 const sectionClass =
@@ -104,6 +105,7 @@ function MoviePageContent() {
 function EditableMovieDetails({ movie, userId }: { movie: Movie; userId: string }) {
   const [status, setStatus] = useState<MovieStatus>(movie.status);
   const [favorite, setFavorite] = useState(Boolean(movie.is_favorite));
+  const [liked, setLiked] = useState<boolean | null>(movie.liked ?? null);
   const [notes, setNotes] = useState(movie.notes ?? "");
   const [savingSetting, setSavingSetting] = useState(false);
   const [savingNotes, setSavingNotes] = useState(false);
@@ -119,17 +121,44 @@ function EditableMovieDetails({ movie, userId }: { movie: Movie; userId: string 
     if (savingSetting) return;
     const previousStatus = status;
     const previousFavorite = favorite;
-    if (field === "status") setStatus(value as MovieStatus);
-    else setFavorite(value as boolean);
+    const previousLiked = liked;
+    if (field === "status") {
+      setStatus(value as MovieStatus);
+      // clear liked opinion when moving back to watchlist
+      if (value === "watchlist") setLiked(null);
+    } else {
+      setFavorite(value as boolean);
+    }
     setSavingSetting(true);
     setMessage("");
     try {
-      const { error } = await supabase.from("movies").update({ [field]: value }).eq("id", movie.id).eq("user_id", userId);
+      const updates: Record<string, unknown> = { [field]: value };
+      if (field === "status" && value === "watchlist") updates.liked = null;
+      const { error } = await supabase.from("movies").update(updates).eq("id", movie.id).eq("user_id", userId);
       if (error) throw error;
     } catch (error) {
       console.error("Update movie failed:", error);
       setStatus(previousStatus);
       setFavorite(previousFavorite);
+      setLiked(previousLiked);
+      setMessage("Could not save changes. Please try again.");
+    } finally {
+      setSavingSetting(false);
+    }
+  }
+
+  async function handleLikedChange(next: boolean | null) {
+    if (savingSetting) return;
+    const prev = liked;
+    setLiked(next);
+    setSavingSetting(true);
+    setMessage("");
+    try {
+      const { error } = await supabase.from("movies").update({ liked: next }).eq("id", movie.id).eq("user_id", userId);
+      if (error) throw error;
+    } catch (error) {
+      console.error("Update liked failed:", error);
+      setLiked(prev);
       setMessage("Could not save changes. Please try again.");
     } finally {
       setSavingSetting(false);
@@ -253,6 +282,26 @@ function EditableMovieDetails({ movie, userId }: { movie: Movie; userId: string 
                 <span className="flex-1 text-sm font-medium">Favorite</span>
                 {favorite && <Check className="h-4 w-4 text-[#D99EAF]" />}
               </button>
+              {status === "watched" && (
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                  <button type="button" disabled={savingSetting}
+                    aria-pressed={liked === true}
+                    onClick={() => void handleLikedChange(liked === true ? null : true)}
+                    className={`flex items-center gap-3 rounded-xl border p-3.5 transition-colors ${liked === true ? "border-emerald-600/60 bg-emerald-900/20" : "border-[#354052] bg-[#242D3C] hover:border-[#526078]"}`}>
+                    <ThumbsUp className={`h-4 w-4 ${liked === true ? "fill-emerald-400/30 text-emerald-400" : "text-[#8994A5]"}`} />
+                    <span className="flex-1 text-sm font-medium">Like</span>
+                    {liked === true && <Check className="h-4 w-4 text-emerald-400" />}
+                  </button>
+                  <button type="button" disabled={savingSetting}
+                    aria-pressed={liked === false}
+                    onClick={() => void handleLikedChange(liked === false ? null : false)}
+                    className={`flex items-center gap-3 rounded-xl border p-3.5 transition-colors ${liked === false ? "border-red-700/60 bg-red-900/20" : "border-[#354052] bg-[#242D3C] hover:border-[#526078]"}`}>
+                    <ThumbsDown className={`h-4 w-4 ${liked === false ? "fill-red-400/30 text-red-400" : "text-[#8994A5]"}`} />
+                    <span className="flex-1 text-sm font-medium">Dislike</span>
+                    {liked === false && <Check className="h-4 w-4 text-red-400" />}
+                  </button>
+                </div>
+              )}
               {message && <p role="alert" className="mt-3 text-sm text-red-400">{message}</p>}
               {movie.rating != null && <div className="mt-5"><Info label="Your Rating">{`${movie.rating}/10`}</Info></div>}
             </section>
@@ -268,6 +317,14 @@ function EditableMovieDetails({ movie, userId }: { movie: Movie; userId: string 
             </section>
 
             <div className="flex flex-col items-end gap-3">
+              <RecommendButton movie={{
+                title: movie.title,
+                year: movie.year,
+                poster: movie.poster,
+                imdb_id: movie.imdb_id,
+                genre: movie.genre,
+                imdb_rating: movie.imdb_rating,
+              }} />
               <button
               type="button"
               onClick={() => { setConfirmDelete(true); setDeleteError(""); }}

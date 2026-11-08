@@ -3,13 +3,14 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ArrowLeft, Film, LogOut, Plus } from "lucide-react";
+import { ArrowLeft, LogOut, Plus, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 import { useAuth } from "@/contexts/auth-context";
 import { useAddMovie } from "@/contexts/add-movie-context";
 import { ShareButton } from "@/components/share-button";
 import { CollectionToolbar } from "@/components/collection-toolbar";
+import { NotificationsBell } from "@/components/notifications-bell";
 
 export function Navigation() {
   const pathname = usePathname();
@@ -21,10 +22,19 @@ export function Navigation() {
 
   const isAuthPage = pathname === "/login" || pathname === "/signup";
   const isCollectionPage = pathname === "/";
+  const isFriendsSubPage =
+    pathname === "/activity" ||
+    pathname === "/recommendations" ||
+    pathname.startsWith("/profile/");
+
+  const isFriendsPage = pathname === "/friends";
+
   const showBackButton =
     pathname.startsWith("/edit/") ||
     pathname.startsWith("/movies/") ||
-    pathname.startsWith("/movie/");
+    pathname.startsWith("/movie/") ||
+    isFriendsPage ||
+    isFriendsSubPage;
 
   const handleSignOut = async () => {
     if (signingOut) return;
@@ -51,31 +61,18 @@ export function Navigation() {
         <div className="border-b border-[#131D2A] bg-[#070C13]/97 shadow-[0_2px_24px_rgba(0,0,0,0.45)] backdrop-blur-xl">
           <nav className="mx-auto flex w-full max-w-[1920px] items-center gap-2 px-3 py-2 sm:px-4 2xl:px-6">
 
-            {/* ── Left: brand logo or back button ── */}
-            {showBackButton ? (
+            {/* ── Left: back button ── */}
+            {showBackButton && (
               <Link
-                href="/"
+                href={isFriendsSubPage ? "/friends" : "/"}
                 className="flex h-9 shrink-0 items-center gap-2 rounded-lg px-2.5 text-sm font-medium text-[#6B7A8D] transition-colors hover:bg-[#111A26] hover:text-[#D8DDE6]"
               >
                 <ArrowLeft className="h-4 w-4 shrink-0" />
-                <span className="hidden sm:inline">Collection</span>
-              </Link>
-            ) : (
-              <Link
-                href="/"
-                aria-label="Home"
-                className={cn(
-                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-all",
-                  "border border-[#74603D]/30 bg-[#74603D]/10 text-[#B49A70]",
-                  "hover:border-[#74603D]/55 hover:bg-[#74603D]/20 hover:text-[#D4BA8D]",
-                  searchExpanded ? "hidden sm:flex" : "flex"
-                )}
-              >
-                <Film className="h-4 w-4" />
+                <span className="hidden sm:inline">{isFriendsSubPage ? "Friends" : "Collection"}</span>
               </Link>
             )}
 
-            {/* ── Middle: search + filters ── */}
+            {/* ── Middle: search + filters (home only) ── */}
             {user && isCollectionPage && (
               <CollectionToolbar
                 searchFocused={searchFocused}
@@ -92,6 +89,25 @@ export function Navigation() {
             >
               {!loading && user && (
                 <>
+                  {/* Notifications */}
+                  <NotificationsBell />
+
+                  {/* Friends */}
+                  <Link
+                    href="/friends"
+                    aria-label="Friends"
+                    title="Friends"
+                    className={cn(
+                      "flex h-9 shrink-0 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-medium transition-colors",
+                      pathname === "/friends" || pathname === "/activity" || pathname === "/recommendations"
+                        ? "border-[#74603D]/40 bg-[#74603D]/10 text-[#B49A70]"
+                        : "border-[#172030] bg-[#0C1520] text-[#6B7A8D] hover:border-[#283A52] hover:text-[#C8D0DC]"
+                    )}
+                  >
+                    <Users className="h-4 w-4 shrink-0" />
+                    <span className="hidden sm:inline">Friends</span>
+                  </Link>
+
                   {/* Share */}
                   <ShareButton />
 

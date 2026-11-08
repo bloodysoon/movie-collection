@@ -13,6 +13,8 @@ import {
   Loader2,
   MoreHorizontal,
   Star,
+  ThumbsDown,
+  ThumbsUp,
   Trash2,
 } from "lucide-react";
 
@@ -35,6 +37,7 @@ const statusOptions = [
 export function MovieCard({ movie, readonly = false, onDelete, onUpdate }: MovieCardProps) {
   const [status,     setStatus]     = useState<MovieStatus>(movie.status);
   const [isFavorite, setIsFavorite] = useState(movie.is_favorite ?? false);
+  const [liked,      setLiked]      = useState<boolean | null>(movie.liked ?? null);
   const [menuOpen,   setMenuOpen]   = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [saving,     setSaving]     = useState(false);
@@ -45,7 +48,8 @@ export function MovieCard({ movie, readonly = false, onDelete, onUpdate }: Movie
   useEffect(() => {
     setStatus(movie.status);
     setIsFavorite(movie.is_favorite ?? false);
-  }, [movie.status, movie.is_favorite]);
+    setLiked(movie.liked ?? null);
+  }, [movie.status, movie.is_favorite, movie.liked]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -171,6 +175,12 @@ export function MovieCard({ movie, readonly = false, onDelete, onUpdate }: Movie
         {/* Always-visible: favorite heart (top-left, tiny) */}
         {isFavorite && (
           <Heart className="absolute left-1.5 top-1.5 z-20 h-2.5 w-2.5 fill-[#E0CBE8]/80 text-[#E0CBE8]/80 drop-shadow" />
+        )}
+        {liked === true && (
+          <ThumbsUp className={cn("absolute z-20 h-2.5 w-2.5 fill-emerald-400/70 text-emerald-400/70 drop-shadow", isFavorite ? "left-5 top-1.5" : "left-1.5 top-1.5")} />
+        )}
+        {liked === false && (
+          <ThumbsDown className={cn("absolute z-20 h-2.5 w-2.5 fill-red-400/70 text-red-400/70 drop-shadow", isFavorite ? "left-5 top-1.5" : "left-1.5 top-1.5")} />
         )}
 
         {/* Gradient — hover only */}
