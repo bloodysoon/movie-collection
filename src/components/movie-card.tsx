@@ -113,6 +113,21 @@ export function MovieCard({ movie, readonly = false, onDelete, onUpdate }: Movie
     } finally { setSaving(false); }
   }
 
+  async function handleLikedChange(next: boolean | null) {
+    if (saving) return;
+    const prev = liked;
+    setLiked(next);
+    setSaving(true); setError("");
+    try {
+      const { error: err } = await supabase
+        .from("movies").update({ liked: next }).eq("id", movie.id);
+      if (err) throw err;
+      onUpdate?.(movie.id, { liked: next });
+    } catch (e) {
+      console.error(e); setError("Could not update."); setLiked(prev);
+    } finally { setSaving(false); setMenuOpen(false); }
+  }
+
   async function handleDelete() {
     if (saving) return;
     setSaving(true); setError("");
@@ -275,6 +290,41 @@ export function MovieCard({ movie, readonly = false, onDelete, onUpdate }: Movie
                   </button>
                 );
               })}
+              {status === "watched" && (
+                <>
+                  <div className="my-1 h-px bg-[#2C3646]" />
+                  <button
+                    type="button"
+                    role="menuitemradio"
+                    aria-checked={liked === true}
+                    onClick={() => void handleLikedChange(liked === true ? null : true)}
+                    disabled={saving}
+                    className={cn(
+                      "flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-xs transition-colors",
+                      liked === true ? "bg-emerald-900/30 text-emerald-400" : "text-[#D5DAE2] hover:bg-[#2C3646]"
+                    )}
+                  >
+                    <ThumbsUp className="h-3 w-3" />
+                    <span className="flex-1">Like</span>
+                    {liked === true && <Check className="h-3 w-3" />}
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitemradio"
+                    aria-checked={liked === false}
+                    onClick={() => void handleLikedChange(liked === false ? null : false)}
+                    disabled={saving}
+                    className={cn(
+                      "flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-xs transition-colors",
+                      liked === false ? "bg-red-900/30 text-red-400" : "text-[#D5DAE2] hover:bg-[#2C3646]"
+                    )}
+                  >
+                    <ThumbsDown className="h-3 w-3" />
+                    <span className="flex-1">Dislike</span>
+                    {liked === false && <Check className="h-3 w-3" />}
+                  </button>
+                </>
+              )}
               <div className="my-1 h-px bg-[#2C3646]" />
               <button
                 type="button"

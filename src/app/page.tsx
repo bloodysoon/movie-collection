@@ -65,9 +65,10 @@ function MovieCollection() {
 
         const matchesStatus =
           !status ||
-          (status === "favorites"
-            ? movie.is_favorite === true
-            : movie.status === status);
+          (status === "favorites" ? movie.is_favorite === true :
+           status === "liked"     ? movie.liked === true :
+           status === "disliked"  ? movie.liked === false :
+           movie.status === status);
 
         const matchesGenre =
           !genre ||

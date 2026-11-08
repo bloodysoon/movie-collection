@@ -227,6 +227,8 @@ export function CollectionToolbar({
             <option value="watchlist">Watchlist</option>
             <option value="watched">Watched</option>
             <option value="favorites">Favorites</option>
+            <option value="liked">Liked</option>
+            <option value="disliked">Disliked</option>
           </select>
 
           <select
@@ -321,6 +323,8 @@ export function CollectionToolbar({
                     { value: "watchlist",  label: "Watchlist" },
                     { value: "watched",    label: "Watched"   },
                     { value: "favorites",  label: "Favorites" },
+                    { value: "liked",      label: "👍 Liked"  },
+                    { value: "disliked",   label: "👎 Disliked" },
                   ].map((o) => (
                     <Pill
                       key={o.value}
